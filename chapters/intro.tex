@@ -1,0 +1,25 @@
+\chapter{引论}
+\label{chap:introduction}
+
+近年来，以Transformer架构为基础的大语言模型（Large Language Models, LLMs）取得了革命性的进展，在自然语言处理乃至更广泛的人工智能领域引发了深刻的范式变革。从BERT\cite{Devlin2019BERTPO}、GPT\cite{Radford2018ImprovingLU}系列到如今数千亿甚至万亿参数的巨型模型，LLMs通过在海量数据上进行预训练，展现出了前所未有的语言理解、生成乃至推理能力，并在多种下游任务中取得了卓越表现。
+
+这种成功的核心驱动力之一是“规模定律”（Scaling Laws），即随着模型参数量、数据量和计算量的增加，模型的性能也会可预测地持续提升\cite{Kaplan2020ScalingLF}。遵循这一规律，学术界和工业界竞相投入巨大的资源来训练更大、更强的“稠密”（Dense）模型。然而，这种依靠堆砌资源、暴力美学式的发展路径正面临日益严峻的挑战。训练一个拥有数千亿参数的稠密模型，需要惊人的计算资源（数千乃至数万个GPU/TPU）。例如，GPT-3\cite{Brown2020LanguageMA}（1750亿参数）的单次训练成本高达数百万美元\cite{lambdaai2020demystifyinggpt3}。对应的，其推理成本也居高不下，大大影响了部署此类模型的经济效益\cite{Erdil2025InferenceEO}。这种高昂的成本不仅限制了模型的迭代速度，也使得广大研究者和中小型机构难以参与到前沿模型的研发中。因此，“稠密”的巨型模型已非长久之计。学术界和工业界开始积极探索新的路径，以期在维持甚至超越现有模型性能的同时，显著提升计算效率。在这一背景下，“稀疏化”（Sparsity）成为了一个极具吸引力的研究方向。
+
+混合专家模型（Mixture-of-Experts, MoE）\cite{Jacobs1991AdaptiveMO}作为一种实现模型稀疏化的有效途径，近年来重新焕发了强大的生命力。MoE的核心思想根植于“分而治之”的理念，其历史可以追溯到上世纪90年代的早期神经网络研究 \cite{Jacobs1991AdaptiveMO,Jordan1993HierarchicalMO}。其基本框架是，将一个庞大的模型拆分为多个相对较小的、功能各异的“专家”子网络，并通过一个“门控网络”（Gating Network）或“路由器”（Router）来决定每个输入（例如一个token）应该由哪些专家来处理，并将专家的输出加权合并，形成最终的输出。
+
+与稠密模型在处理每个输入时都激活全部参数不同，现代MoE模型采用\textbf{条件计算}（Conditional Computation）机制，即每次只激活一小部分专家网络。这意味着模型的总参数量可以非常庞大（从而拥有巨大的模型容量），但实际的计算量却只与被激活的少数专家相关，从而在大幅增加模型规模的同时，保持了计算成本的相对恒定\cite{Shazeer2017OutrageouslyLN}。
+
+将混合专家模型架构与Transformer结合，是近年来最重要的突破之一。通过将Transformer中的前馈神经网络层（Feed-Forward Network, FFN）替换为MoE层，研究者们成功地将模型参数扩展到了万亿级别，如谷歌的GShard\cite{Lepikhin2020GShardSG}和Switch Transformer\cite{Fedus2021SwitchTS}。普遍认为，当前的一线闭源模型GPT-4\cite{Achiam2023GPT4TR}、Claude Opus 4\cite{anthropic2024claude4}和Grok 4\cite{xai2025grok4}有很大可能均使用了混合专家模型架构；特别地，谷歌的顶尖模型Gemini 2.5 Pro\cite{comanici2025gemini25pushingfrontier}声明了自己使用了混合专家模型架构。近期，开源社区也涌现出如Mixtral 8x7B\cite{Jiang2024MixtralOE}、DeepSeek-V3\cite{DeepSeekAI2024DeepSeekV3TR}、Kimi K2\cite{Bai2025KimiKO}等一系列较高性能的混合专家模型，极大地推动了该技术的发展和普及，大大促进了开源高性能模型的商业化部署。
+
+本文旨在全面回顾与总结当前面向大规模预训练模型的混合专家模型的研究进展。我们将系统性地梳理混合专家模型的关键技术、主流架构、训练策略以及相关的分析工作。特别地，在此基础上，本文将进一步讨论我们在混合专家模型负载均衡策略方面的个人研究进展，即\textbf{一种无辅助损失的负载均衡策略（An Auxiliary-Loss-Free Load Balancing Strategy for Mixture-of-Experts）}\cite{Wang2024AuxiliaryLossFreeLB}。通过本综述，我们期望能够为相关领域的研究人员乃至其他领域的感兴趣者提供一个对混合专家模型的全局认识，以及在特定细分方向（负载均衡）的深入认知。
+
+
+% not finished
+
+本文的后续章节按照如下方式组织：
+\begin{itemize}
+    \item 第二章将介绍理解混合专家模型所必需的背景知识，主要包括作为现代大语言模型基石的 Transformer 架构、混合专家模型的基本原理与核心组件，以及预训练大语言模型的演进脉络。
+    \item 第三章将深入探讨经典的混合专家模型架构与训练方法，重点梳理其经典的稀疏架构、Top-k 路由算法的多种变体与优化，并详细分析混合专家模型训练中的核心挑战——负载均衡问题及其主流解决策略。
+    \item 第四章将综述混合专家模型领域的多种前沿变种，介绍包括专家选择路由（Expert Choice Routing）在内的非 Top-K 路由机制，以及将混合专家思想从前馈网络扩展至注意力机制、模型深度等其他维度的创新架构。
+    \item 第五章将详细阐述本人的个人研究进展，即我们提出的“无辅助损失均衡（Auxiliary-Loss-Free Balancing）”负载均衡策略。本章将从动机、算法设计、实验结果等多个方面全面介绍该方法。这一方法旨在解决传统辅助损失带来的性能与均衡之间的困境。
+\end{itemize}
